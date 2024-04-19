@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rubiks Cube - Mapping Model</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            display: block;
+            background-color: #EEE;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+    
+
+        //Three.js object setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        camera.position.set(4, 4, 4);
+        camera.lookAt(scene.position);
+
+
+        const group = new THREE.Group(); //Collection of entire cubie container
+        const groups = {
+            front: new Array(), right: new Array(), //ordered cubie lists per face, used to parse .json from server response
+            back: new Array(), left: new Array(), up: new Array(), down: new Array()
+        };
+        const pointer = { x: 0, y: 0, horizontal: false };  //Horizontal Indicates z-directional control amongst cubies
+        scene.add(group);
+        animate();
+
+        //Orientation specific loop for assigning face colors from server response
+        const CUBE_DIMENSION = 3
+        for (let x = 0; x < CUBE_DIMENSION; x++) {
+            for (let y = CUBE_DIMENSION - 1; y >= 0; y--) {
+                for (let z = CUBE_DIMENSION -1; z >= 0; z--) {
+                    group.add(createCube(x, y, z));
+                }
+            }
+        }
+        /*
+        Creates a cube with initial coordinates and material objects for faces
+        assigns cube to respective groups
+        @param x, y, z position in Three.js scene
+        */
+        function createCube(x, y, z) {
+            const geometry = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+            const colorMaterials = [
+                new THREE.MeshBasicMaterial({ color: 0xFF0000 }), // Red - front
+                new THREE.MeshBasicMaterial({ color: 0x0000FF }), // Blue - left
+                new THREE.MeshBasicMaterial({ color: 0x00FF00 }), // Green - up
+                new THREE.MeshBasicMaterial({ color: 0xFFFF00 }), // Yellow - down
+                new THREE.MeshBasicMaterial({ color: 0xFFA500 }), // Orange - right
+                new THREE.MeshBasicMaterial({ color: 0xFFFFFF })  // White - back
+            ];
+            const cube = new THREE.Mesh(geometry, colorMaterials);
+
+            cube.userData = {
+                coordinates: { x, y, z },
+                faces: colorMaterials
+            };
+            cube.position.set(x-1, y-1, z-1);
+
+            // Add cube to the appropriate groups by assigning orentation for coordinate faces
+            /*
+            Orientations:
+            z+ Out of screen
+            y+ up
+            x+left
+            */
+            if (cube.userData.coordinates.z === 2) groups["front"].push(cube);
+            if (cube.userData.coordinates.z === 0) groups["back"].push(cube);
+            if (cube.userData.coordinates.x === 0) groups["left"].push(cube);
+            if (cube.userData.coordinates.x === 2) groups["right"].push(cube);
+            if (cube.userData.coordinates.y === 0) groups["down"].push(cube);
+            if (cube.userData.coordinates.y === 2) groups["up"].push(cube);
+
+
+            return cube;
+        }
+        /*
+        Enum -> Object creator for interpereting int vals from face arrays
+        Does NOT set a opacity, should be maintained from original material.
+        */
+        function numToColor(number) {
+            const colorMaterials = [
+                new THREE.MeshBasicMaterial({ color: 0xFF0000 }), // Red - front
+                new THREE.MeshBasicMaterial({ color: 0x0000FF }), // Blue - left
+                new THREE.MeshBasicMaterial({ color: 0x00FF00 }), // Green - up
+                new THREE.MeshBasicMaterial({ color: 0xFFFF00 }), // Yellow - down
+                new THREE.MeshBasicMaterial({ color: 0xFFA500 }), // Orange - right
+                new THREE.MeshBasicMaterial({ color: 0xFFFFFF })  // White - back
+            ];
+            return colorMaterials[number];
+        }
+        /*
+        Highlights cubes at the given pointers indexes -> pointer[0] = 1: selects a "slice
+        horizontally for rotation, horizontal triggered, selects in the perpindicular direction
+        */
+        function highlightSlice() {
+            group.children.forEach(cube => {
+                const coords = cube.userData.coordinates;
+                let sliceIndex;
+
+                if (pointer.horizontal) {
+                    sliceIndex = pointer.x === 1 ? 2 - coords.y : 2 - coords.z;
+                } else if (pointer.x === 0) {
+                    sliceIndex = coords.x;
+                } else if (pointer.x === 1) {
+                    sliceIndex = 2 - coords.y;
+                }
+                cube.material.forEach(material => {
+                    material.opacity = sliceIndex === pointer.y ? 1.0 : 0.4;
+                    material.transparent = true;
+                });
+            });
+        }
+        /*
+        Updates the scene and renders the graphics constantly
+        Calls updateCubeGraphics to grab updated data from server
+        */
+        function animate() {
+            requestAnimationFrame(animate);
+            highlightSlice();
+            updateCubeGraphics(fetch('/fetch-data')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Data response was not ok!');
+                    }
+                    return response.json();
+                }));
+            renderer.render(scene, camera);
+        }
+        
+        /*
+        Reads from .json file and updates the intended surfaces of cube
+        Orientation is hardfixed on the index of each face within the material of each cubie
+        (see comments below)
+        @param cubeData the .json object containing the faces:
+        front, back left right, up, down
+        */
+        async function updateCubeGraphics(cubeData) {
+
+               
+
+                let front = cubeData.front;
+                let back = rotateArray(rotateArray(rotateArray(cubeData.back)));
+                let left = rotateArray(rotateArray(rotateArray(reflectArray(cubeData.left))));
+                let right = reflectArray(rotateArray(cubeData.right));
+                let up = reflectArray(rotateArray(rotateArray(cubeData.up)));
+                let down = reflectArray(rotateArray(rotateArray(cubeData.down)));
+
+                updateFace(groups.front, front, 4);
+                updateFace(groups.back, back, 5);
+                updateFace(groups.left, left, 1);
+                updateFace(groups.right, right, 0);
+                updateFace(groups.up, up, 2);
+                updateFace(groups.down, down, 3);
+            }
+        /*
+        Updates the given group of cubies with the faceData
+        @param group the group of cubies of the face
+        @param faceData the int[][] array from .json file containing cube face data
+        @param faceIndex the index designating the side; same face of cubie to update
+        */
+        function updateFace(group, faceData, faceIndex) {
+            let i = 0, j = 0;
+            group.forEach(cubie => {
+                // Handle material update
+                const oldMaterial = cubie.userData.faces[faceIndex];
+                cubie.userData.faces[faceIndex] = numToColor(faceData[i][j]);
+
+                cubie.userData.faces.forEach(face => {
+                    face.opacity = oldMaterial.opacity;
+                    face.transparent = oldMaterial.transparent;
+                });
+
+                if (i === 2) {
+                    j = (j + 1) % 3;
+                }
+                i = (i + 1) % 3;
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchInitialState);
+
+        document.addEventListener('keydown', function (event) {
+            let y = pointer.y;
+            switch (event.key) {
+                case 'w':
+                    if (pointer.horizontal) {
+                        if (pointer.x === 0) {
+                            fetch('/send-command/HU', {
+                                method: 'POST',
+                                body: y
+                            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Data response was not ok!');
+                    }
+                    return response.json();
+                });
+                        } else {
+                            pointer.y = (pointer.y + 2) % 3;
+                        }
+                    } else {
+                        if (pointer.x === 1) {
+                            pointer.y = (pointer.y + 2) % 3;
+                        } else {
+                            fetch('/send-command/U', {
+                                method: 'POST',
+                                body: y
+                            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Data response was not ok!');
+                    }
+                    return response.json();
+                });
+                        }
+                    }
+                    break;
+
+                case 's':
+                    if (pointer.horizontal) {
+                        if (pointer.x === 0) {
+                            fetch('/send-command/HD', {
+                                method: 'POST',
+                                body: y
+                            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Data response was not ok!');
+                    }
+                    return response.json();
+                });
+                        } else {
+                            pointer.y = (pointer.y + 1) % 3;
+                        }
+                    } else {
+                        if (pointer.x === 1) {
+                            pointer.y = (pointer.y + 1) % 3;
+                        } else {
+                            fetch('/send-command/D', {
+                                method: 'POST',
+                                body: y
+                            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Data response was not ok!');
+                    }
+                    return response.json();
+                });
+                        }
+                    }
+                    break;
+                case 'a':
+                    if (pointer.x === 0) {
+                        pointer.y = (pointer.y - 1 + 3) % 3;
+
+                    } else {
+                        fetch('/send-command/L', {
+                                method: 'POST',
+                                body: y
+                            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Data response was not ok!');
+                    }
+                    return response.json();
+                });
+                    }
+                    break;
+                case 'd':
+                    if (pointer.x === 0) {
+                        pointer.y = (pointer.y + 1) % 3;
+                    } else {
+                        fetch('/send-command/R', {
+                                method: 'POST',
+                                body: y
+                            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Data response was not ok!');
+                    }
+                    return response.json();
+                });
+                    }
+                    break;
+                case ' ':
+
+                    pointer.x = pointer.x === 1 ? 0 : 1;
+                    break;
+                case 'h':
+                    pointer.horizontal = !pointer.horizontal;
+                    break;
+                case 'ArrowLeft':
+                case 'ArrowRight':
+                    const angle = event.key === 'ArrowLeft' ? Math.PI / 36 : -Math.PI / 36;
+                    camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+                    break;
+                case 'ArrowUp':
+                case 'ArrowDown':
+                    const tilt = event.key === 'ArrowUp' ? Math.PI / 36 : -Math.PI / 36;
+                    camera.position.applyAxisAngle(new THREE.Vector3(1, 0, 0), tilt);
+                    break;
+            }
+            camera.lookAt(scene.position);
+            highlightSlice();
+        });
+        /*
+        Array manipulation methods used to format .json data for ordered list of cubies
+        since added order is determined by addition loop, we add each cubie to proper group
+        and then update each cubie's face with data from .json file
+        */
+
+        /*
+        Maps a given array as follows: (plane rotation)
+        [1,2,3],[4,5,6],[7,8,9] - > [1,4,7][2,8,1][3,6,9]
+        
+        */
+        function rotateArray(array) {
+            const rows = array.length;
+            const cols = array[0].length;
+            let rotatedArray = [];
+
+            for (let col = 0; col < cols; col++) {
+                let newRow = [];
+                for (let row = rows - 1; row >= 0; row--) {
+                    newRow.push(array[row][col]);
+                }
+                rotatedArray.push(newRow);
+            }
+
+            return rotatedArray;
+        }
+       
+        function reflectArray(array) {
+            return array.map(row => row.slice().reverse());
+        }
+
+    </script>
+</body>
+
+</html>

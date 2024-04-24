@@ -264,17 +264,17 @@ public class Cube {
         Cube temp = this.copy();
         if (horizontal) {
             boolean columnLatch = true;
-            int[] indexes = index == 0 ? new int[]{2, 2, 0, 2,2} :
-             (index == 2 ? new int[]{0, 0, 2, 0,0} : new int[]{1, 1, 1, 1,1});
+            int[] indexes = index == 0 ? new int[]{2, 2, 0, 0,2} :
+             (index == 2 ? new int[]{0, 0, 2, 2,0} : new int[]{1, 1, 1, 1,1});
             
-            if (!direction) {
+            if (direction) {
                 for (int i = 0; i < MAP_OPERATIONS; i++) {
                     for (int j = 0; j < CUBE_DIMENSION; j++) {
                         
                         if (columnLatch) {
                             this.faces.get(ROT_COLUMN_SIDE[i + 1])[indexes[i + 1]][j] = temp.faces.get(ROT_COLUMN_SIDE[i])[2 - j][indexes[i]];
                         } else {
-                            this.faces.get(ROT_COLUMN_SIDE[i + 1])[j][indexes[i + 1]] = temp.faces.get(ROT_COLUMN_SIDE[i])[indexes[i]][2-j];
+                            this.faces.get(ROT_COLUMN_SIDE[i + 1])[j][indexes[i + 1]] = temp.faces.get(ROT_COLUMN_SIDE[i])[indexes[i]][j];
                         }
                     }
                     columnLatch = !columnLatch;
@@ -283,9 +283,9 @@ public class Cube {
                 for (int i = MAP_OPERATIONS; i > 0; i--) {
                     for (int j = 0; j < CUBE_DIMENSION; j++) {
                         if (columnLatch) {
-                            this.faces.get(ROT_COLUMN_SIDE[i - 1])[indexes[i - 1]][j] = temp.faces.get(ROT_COLUMN_SIDE[i])[2 - j][indexes[i]];
+                            this.faces.get(ROT_COLUMN_SIDE[i - 1])[indexes[i - 1]][2-j] = temp.faces.get(ROT_COLUMN_SIDE[i])[2-j][indexes[i]];
                         } else {
-                            this.faces.get(ROT_COLUMN_SIDE[i - 1])[j][indexes[i-1]] = temp.faces.get(ROT_COLUMN_SIDE[i])[indexes[i]][2-j];
+                            this.faces.get(ROT_COLUMN_SIDE[i - 1])[2-j][indexes[i-1]] = temp.faces.get(ROT_COLUMN_SIDE[i])[indexes[i]][j];
                         }
                     }
                     columnLatch = !columnLatch;
@@ -321,13 +321,15 @@ public class Cube {
         if (direction) {
             for (int i = 0; i < MAP_OPERATIONS; i++) {
                 for (int j = 0; j < CUBE_DIMENSION; j++) {
-                    this.faces.get(ROT_ROW[i + 1])[indexes[i + 1]][j] = temp.faces.get(ROT_ROW[i])[indexes[i]][2-j];
+                    if (i == 1) {  this.faces.get(ROT_ROW[i + 1])[indexes[i + 1]][2-j] = temp.faces.get(ROT_ROW[i])[indexes[i]][j];}
+                    this.faces.get(ROT_ROW[i + 1])[indexes[i + 1]][j] = temp.faces.get(ROT_ROW[i])[indexes[i]][j];
                 }
             }
         } else {
             for (int i = MAP_OPERATIONS; i > 0; i--) {
                 for (int j = 0; j < CUBE_DIMENSION; j++) {
-                    this.faces.get(ROT_ROW[i - 1])[indexes[i -1]][j] = temp.faces.get(ROT_ROW[i])[indexes[i]][2-j];
+                    if (i == 3) {  this.faces.get(ROT_ROW[i -1])[indexes[i -1]][2-j] = temp.faces.get(ROT_ROW[i])[indexes[i]][j];}
+                    this.faces.get(ROT_ROW[i - 1])[indexes[i -1]][j] = temp.faces.get(ROT_ROW[i])[indexes[i]][j];
                 }
             }
         }

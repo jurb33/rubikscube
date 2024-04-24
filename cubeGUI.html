@@ -21,6 +21,7 @@
 </head>
 
 <body>
+    <button type="button" onclick = ""></button>
     <script>
     
 
@@ -39,19 +40,61 @@
             front: new Array(), right: new Array(), //ordered cubie lists per face, used to parse .json from server response
             back: new Array(), left: new Array(), up: new Array(), down: new Array()
         };
+        let map = {};
+            map[0] = 0;
+            map[1] = 4;
+            map[2] = 5;
+            map[3] = 1;
+            map[4] = 2;
+            map[5] = 3;
+            
         const pointer = { x: 0, y: 0, horizontal: false };  //Horizontal Indicates z-directional control amongst cubies
         scene.add(group);
         animate();
 
         //Orientation specific loop for assigning face colors from server response
+       // Delayed Addition Function
+function addCubesWithDelay() {
+    const CUBE_DIMENSION = 3;
+    let x = 0, y = 0, z = 0;
+
+    function addNextCube() {
+        if (x < CUBE_DIMENSION) {
+            if (y < CUBE_DIMENSION) {
+                if (z < CUBE_DIMENSION) {
+                    const cube = createCube(x, y, z);
+                    cube.userData = { coordinates: { x, y, z } };
+                    cube.position.set(x - 1, y - 1, z - 1);
+                    // Organization logic if needed
+                    z++;
+                } else {
+                    z = 0;
+                    y++;
+                }
+            } else {
+                y = 0;
+                x++;
+            }
+
+            if (x < CUBE_DIMENSION) {
+                setTimeout(addNextCube, 20); // Delay of 1 second
+            }
+        }
+    }
+
+    addNextCube(); // Start adding cubes
+}
         const CUBE_DIMENSION = 3
         for (let x = 0; x < CUBE_DIMENSION; x++) {
-            for (let y = CUBE_DIMENSION - 1; y >= 0; y--) {
+            for (let y = 0; y < CUBE_DIMENSION; y++) {
                 for (let z = CUBE_DIMENSION -1; z >= 0; z--) {
                     group.add(createCube(x, y, z));
                 }
             }
         }
+
+        highlightSlice();
+        updateCubeGraphics();
         /*
         Creates a cube with initial coordinates and material objects for faces
         assigns cube to respective groups
@@ -80,16 +123,16 @@
             Orientations:
             z+ Out of screen
             y+ up
-            x+left
+            x+right
             */
-            if (cube.userData.coordinates.z === 2) groups["front"].push(cube);
-            if (cube.userData.coordinates.z === 0) groups["back"].push(cube);
-            if (cube.userData.coordinates.x === 0) groups["left"].push(cube);
-            if (cube.userData.coordinates.x === 2) groups["right"].push(cube);
-            if (cube.userData.coordinates.y === 0) groups["down"].push(cube);
-            if (cube.userData.coordinates.y === 2) groups["up"].push(cube);
+            if (cube.userData.coordinates.z === 2) {groups["front"].push(cube); console.log("Added to front");}
+            if (cube.userData.coordinates.z === 0){groups["back"].push(cube);console.log("Added to back");}
+            if (cube.userData.coordinates.x === 0){ groups["left"].push(cube); console.log("Added to left");}
+            if (cube.userData.coordinates.x === 2) {groups["right"].push(cube); console.log("Added to right");}
+            if (cube.userData.coordinates.y === 0) {groups["down"].push(cube); console.log("Added to down");}
+            if (cube.userData.coordinates.y === 2) {groups["up"].push(cube); console.log("added to up");}
 
-
+            
             return cube;
         }
         /*
@@ -97,6 +140,7 @@
         Does NOT set a opacity, should be maintained from original material.
         */
         function numToColor(number) {
+
             const colorMaterials = [
                 new THREE.MeshBasicMaterial({ color: 0xFF0000 }), // Red - front
                 new THREE.MeshBasicMaterial({ color: 0x0000FF }), // Blue - left
@@ -105,7 +149,7 @@
                 new THREE.MeshBasicMaterial({ color: 0xFFA500 }), // Orange - right
                 new THREE.MeshBasicMaterial({ color: 0xFFFFFF })  // White - back
             ];
-            return colorMaterials[number];
+            return colorMaterials[map[number]];
         }
         /*
         Highlights cubes at the given pointers indexes -> pointer[0] = 1: selects a "slice
@@ -123,7 +167,7 @@
                 } else if (pointer.x === 1) {
                     sliceIndex = 2 - coords.y;
                 }
-                cube.material.forEach(material => {
+                cube.userData.faces.forEach(material => {
                     material.opacity = sliceIndex === pointer.y ? 1.0 : 0.4;
                     material.transparent = true;
                 });
@@ -131,18 +175,9 @@
         }
         /*
         Updates the scene and renders the graphics constantly
-        Calls updateCubeGraphics to grab updated data from server
         */
         function animate() {
             requestAnimationFrame(animate);
-            highlightSlice();
-            updateCubeGraphics(fetch('/fetch-data')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Data response was not ok!');
-                    }
-                    return response.json();
-                }));
             renderer.render(scene, camera);
         }
         
@@ -153,24 +188,40 @@
         @param cubeData the .json object containing the faces:
         front, back left right, up, down
         */
-        async function updateCubeGraphics(cubeData) {
-
-               
-
-                let front = cubeData.front;
-                let back = rotateArray(rotateArray(rotateArray(cubeData.back)));
-                let left = rotateArray(rotateArray(rotateArray(reflectArray(cubeData.left))));
-                let right = reflectArray(rotateArray(cubeData.right));
-                let up = reflectArray(rotateArray(rotateArray(cubeData.up)));
-                let down = reflectArray(rotateArray(rotateArray(cubeData.down)));
-
-                updateFace(groups.front, front, 4);
-                updateFace(groups.back, back, 5);
-                updateFace(groups.left, left, 1);
-                updateFace(groups.right, right, 0);
-                updateFace(groups.up, up, 2);
-                updateFace(groups.down, down, 3);
+        async function updateCubeGraphics() {
+    fetch('/fetch-data')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Data response was not ok! Status: ' + response.status);
             }
+            return response.json();
+        })
+        .then(data => {
+            console.log(data);
+             let { frontFace, backFace, leftFace, rightFace, upFace, downFace } = data;
+            if (!frontFace || !backFace || !leftFace || !rightFace || !upFace || !downFace) {
+                console.error("One or more face data are undefined:", { front, back, left, right, up, down });
+                return; // Stop further processing if data is incomplete
+            }
+
+            let processedBack = reflectArray(rotateArray(rotateArray(backFace)));
+            let processedLeft = reflectArray(rotateArray(rotateArray(rotateArray(leftFace))));
+            let processedRight = rotateArray(rightFace);
+            let processedUp = reflectArray(rotateArray(rotateArray(upFace)));
+            let processedDown =((downFace));
+            let processedFront = reflectArray(rotateArray(rotateArray(frontFace)));
+            updateFace(groups.front, processedFront, 4);
+            updateFace(groups.back, processedBack, 5);
+            updateFace(groups.left, processedLeft, 1);
+            updateFace(groups.right, processedRight, 0);
+            updateFace(groups.up, processedUp, 2);
+            updateFace(groups.down, processedDown, 3);
+        })
+        .catch(error => {
+            console.error("Error fetching or processing cube data:", error);
+        });
+}
+
         /*
         Updates the given group of cubies with the faceData
         @param group the group of cubies of the face
@@ -179,11 +230,11 @@
         */
         function updateFace(group, faceData, faceIndex) {
             let i = 0, j = 0;
+            
             group.forEach(cubie => {
                 // Handle material update
                 const oldMaterial = cubie.userData.faces[faceIndex];
                 cubie.userData.faces[faceIndex] = numToColor(faceData[i][j]);
-
                 cubie.userData.faces.forEach(face => {
                     face.opacity = oldMaterial.opacity;
                     face.transparent = oldMaterial.transparent;
@@ -196,17 +247,18 @@
             });
         }
 
-        document.addEventListener('DOMContentLoaded', fetchInitialState);
-
-        document.addEventListener('keydown', function (event) {
-            let y = pointer.y;
-            switch (event.key) {
-                case 'w':
-                    if (pointer.horizontal) {
-                        if (pointer.x === 0) {
-                            fetch('/send-command/HU', {
+        
+        /*
+        * Fetches command from the springboot server at the given endpoint:
+        * /send-command/${command}
+        */
+        function fetchCommand(command) {
+                            fetch(`/send-command/${command}`, {
                                 method: 'POST',
-                                body: y
+                                headers: {
+                             'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({index: pointer.y})
                             })
                 .then(response => {
                     if (!response.ok) {
@@ -214,6 +266,16 @@
                     }
                     return response.json();
                 });
+                updateCubeGraphics();
+        }
+        //document.addEventListener('DOMContentLoaded', updateCubeGraphics);
+
+        document.addEventListener('keydown', function (event) {
+            switch (event.key) {
+                case 'w':
+                    if (pointer.horizontal) {
+                        if (pointer.x === 0) {
+                            fetchCommand('HU');
                         } else {
                             pointer.y = (pointer.y + 2) % 3;
                         }
@@ -221,16 +283,7 @@
                         if (pointer.x === 1) {
                             pointer.y = (pointer.y + 2) % 3;
                         } else {
-                            fetch('/send-command/U', {
-                                method: 'POST',
-                                body: y
-                            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Data response was not ok!');
-                    }
-                    return response.json();
-                });
+                            fetchCommand('U');
                         }
                     }
                     break;
@@ -238,16 +291,7 @@
                 case 's':
                     if (pointer.horizontal) {
                         if (pointer.x === 0) {
-                            fetch('/send-command/HD', {
-                                method: 'POST',
-                                body: y
-                            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Data response was not ok!');
-                    }
-                    return response.json();
-                });
+                            fetchCommand('HD');
                         } else {
                             pointer.y = (pointer.y + 1) % 3;
                         }
@@ -255,16 +299,7 @@
                         if (pointer.x === 1) {
                             pointer.y = (pointer.y + 1) % 3;
                         } else {
-                            fetch('/send-command/D', {
-                                method: 'POST',
-                                body: y
-                            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Data response was not ok!');
-                    }
-                    return response.json();
-                });
+                            fetchCommand('D');
                         }
                     }
                     break;
@@ -273,36 +308,17 @@
                         pointer.y = (pointer.y - 1 + 3) % 3;
 
                     } else {
-                        fetch('/send-command/L', {
-                                method: 'POST',
-                                body: y
-                            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Data response was not ok!');
-                    }
-                    return response.json();
-                });
+                        fetchCommand('L');
                     }
                     break;
                 case 'd':
                     if (pointer.x === 0) {
                         pointer.y = (pointer.y + 1) % 3;
                     } else {
-                        fetch('/send-command/R', {
-                                method: 'POST',
-                                body: y
-                            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Data response was not ok!');
-                    }
-                    return response.json();
-                });
+                        fetchCommand('R');
                     }
                     break;
                 case ' ':
-
                     pointer.x = pointer.x === 1 ? 0 : 1;
                     break;
                 case 'h':
@@ -322,6 +338,7 @@
             camera.lookAt(scene.position);
             highlightSlice();
         });
+
         /*
         Array manipulation methods used to format .json data for ordered list of cubies
         since added order is determined by addition loop, we add each cubie to proper group
@@ -334,6 +351,9 @@
         
         */
         function rotateArray(array) {
+            if (array==null) {
+                return;
+            }
             const rows = array.length;
             const cols = array[0].length;
             let rotatedArray = [];
@@ -350,6 +370,7 @@
         }
        
         function reflectArray(array) {
+            if (array==null) {return;}
             return array.map(row => row.slice().reverse());
         }
 

@@ -204,10 +204,10 @@ function addCubesWithDelay() {
                 return; // Stop further processing if data is incomplete
             }
 
-            let processedBack = reflectArray(rotateArray(rotateArray(backFace)));
+            let processedBack = (backFace);
             let processedLeft = reflectArray(rotateArray(rotateArray(rotateArray(leftFace))));
             let processedRight = rotateArray(rightFace);
-            let processedUp = reflectArray(rotateArray(rotateArray(upFace)));
+            let processedUp = rotateArray(rotateArray(reflectArray((upFace))));
             let processedDown =((downFace));
             let processedFront = reflectArray(rotateArray(rotateArray(frontFace)));
             updateFace(groups.front, processedFront, 4);

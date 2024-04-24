@@ -1,3 +1,7 @@
+package com.cubeservice.rest;
+
+
+
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -17,7 +21,7 @@ public class Cube {
     public ArrayList<int[][]> faces = new ArrayList<>();
     public final int[] faceList = {FRONT, RIGHT, BACK, LEFT, UP, DOWN};
 
-    public static boolean isHorizontal = false;
+    public boolean isHorizontal = false;
     public static final int CUBE_DIMENSION = 3;
     public static final int MAP_OPERATIONS = 4;
 
@@ -53,7 +57,8 @@ public class Cube {
      */
     public void U(int index) {
         this.rotateBar(index, true, false);
-        CubeInteraction.moveCount++;
+        System.out.println(this.backFace[1][0]);
+        //CubeInteraction.moveCount++;
     }
 
     /**
@@ -64,7 +69,7 @@ public class Cube {
     public void D(int index) {
         this.rotateBar(index, false, false);
         
-        CubeInteraction.moveCount++;
+        //CubeInteraction.moveCount++;
     }
 
     /**
@@ -73,8 +78,8 @@ public class Cube {
      * @param index The index of the row (0-2) to rotate.
      */
     public void L(int index) {
-        this.rotateSlice(index, true);
-        CubeInteraction.moveCount++;
+        this.rotateSlice(index % 3, true);
+       // CubeInteraction.moveCount++;
     }
 
     /**
@@ -83,8 +88,8 @@ public class Cube {
      * @param index The index of the row (0-2) to rotate.
      */
     public void R(int index) {
-        this.rotateSlice(index, false);
-        CubeInteraction.moveCount++;
+        this.rotateSlice((index ) % 3, false);
+        //CubeInteraction.moveCount++;
     }
 
     /**
@@ -93,8 +98,8 @@ public class Cube {
      * @param index The index of the column (0-2) to rotate.
      */
     public void HU(int index) {
-        this.rotateBar(index, true, true);
-        CubeInteraction.moveCount++;
+        this.rotateBar((index) % 3, true, true);
+        //CubeInteraction.moveCount++;
     }
 
     /**
@@ -103,8 +108,8 @@ public class Cube {
      * @param index The index of the column (0-2) to rotate.
      */
     public void HD(int index) {
-        this.rotateBar(index, false, true);
-        CubeInteraction.moveCount++;
+        this.rotateBar((index) % 3, false, true);
+        //CubeInteraction.moveCount++;
     }
 
     /**
@@ -127,37 +132,37 @@ public class Cube {
         
         //Log each scramble move
         while (moveCount < level) {
-        	CubeInteraction.moves.log(this);
-        	moveCount++;
-        	
-        	//Bounded to possible indexes and moves.
-        	int randIndex = random.nextInt(3);
-        	int randMove = random.nextInt(6);
-        	//Calls a random move based on seeding
-        	switch (randMove) {
-        	case 0:
-        		this.U(randIndex);
-        		
-        		break;
+            //CubeInteraction.moves.log(this);
+            moveCount++;
+            
+            //Bounded to possible indexes and moves.
+            int randIndex = random.nextInt(3);
+            int randMove = random.nextInt(6);
+            //Calls a random move based on seeding
+            switch (randMove) {
+            case 0:
+                this.U(randIndex);
+                
+                break;
         
-        	case 1:
-        		this.D(randIndex);
-        		break;
-        		
-        	case 2:
-        		this.L(randIndex);
-        		break;
-        	case 3: 
-        		this.R(randIndex);
-        	break;
-        	case 4:
-        		this.HU(randIndex);
-        		break;
-        	case 5:
-        		this.HD(randIndex);
-        		break;
-        		
-        	}
+            case 1:
+                this.D(randIndex);
+                break;
+                
+            case 2:
+                this.L(randIndex);
+                break;
+            case 3: 
+                this.R(randIndex);
+            break;
+            case 4:
+                this.HU(randIndex);
+                break;
+            case 5:
+                this.HD(randIndex);
+                break;
+                
+            }
         }
         
     }
@@ -215,7 +220,7 @@ public class Cube {
         if (pointY == 0) {
             this.planeRotation(UP, clockwise);
         } else if (pointY == 2) {
-            this.planeRotation(DOWN, clockwise);
+            this.planeRotation(DOWN, !clockwise);
         }
     }
 
@@ -258,17 +263,32 @@ public class Cube {
     public void mapColumn(int index, boolean direction, boolean horizontal) {
         Cube temp = this.copy();
         if (horizontal) {
-            if (direction) {
+            boolean columnLatch = true;
+            int[] indexes = index == 0 ? new int[]{2, 2, 0, 2,2} :
+             (index == 2 ? new int[]{0, 0, 2, 0,0} : new int[]{1, 1, 1, 1,1});
+            
+            if (!direction) {
                 for (int i = 0; i < MAP_OPERATIONS; i++) {
                     for (int j = 0; j < CUBE_DIMENSION; j++) {
-                        this.faces.get(ROT_COLUMN_SIDE[i + 1])[j][index] = temp.faces.get(ROT_COLUMN_SIDE[i])[j][index];
+                        
+                        if (columnLatch) {
+                            this.faces.get(ROT_COLUMN_SIDE[i + 1])[indexes[i + 1]][j] = temp.faces.get(ROT_COLUMN_SIDE[i])[2 - j][indexes[i]];
+                        } else {
+                            this.faces.get(ROT_COLUMN_SIDE[i + 1])[j][indexes[i + 1]] = temp.faces.get(ROT_COLUMN_SIDE[i])[indexes[i]][2-j];
+                        }
                     }
+                    columnLatch = !columnLatch;
                 }
             } else {
                 for (int i = MAP_OPERATIONS; i > 0; i--) {
                     for (int j = 0; j < CUBE_DIMENSION; j++) {
-                        this.faces.get(ROT_COLUMN_SIDE[i - 1])[j][index] = temp.faces.get(ROT_COLUMN_SIDE[i])[j][index];
+                        if (columnLatch) {
+                            this.faces.get(ROT_COLUMN_SIDE[i - 1])[indexes[i - 1]][j] = temp.faces.get(ROT_COLUMN_SIDE[i])[2 - j][indexes[i]];
+                        } else {
+                            this.faces.get(ROT_COLUMN_SIDE[i - 1])[j][indexes[i-1]] = temp.faces.get(ROT_COLUMN_SIDE[i])[indexes[i]][2-j];
+                        }
                     }
+                    columnLatch = !columnLatch;
                 }
             }
         } else {
@@ -296,17 +316,18 @@ public class Cube {
      */
     public void mapRow(int row, boolean direction) {
         Cube temp = this.copy();
-
+        int backreflectIndex = row == 0 ? 2: row == 2 ? 0: 1;
+        int [] indexes = new int[] {row, row, backreflectIndex, row, row};
         if (direction) {
             for (int i = 0; i < MAP_OPERATIONS; i++) {
                 for (int j = 0; j < CUBE_DIMENSION; j++) {
-                    this.faces.get(ROT_ROW[i + 1])[row][j] = temp.faces.get(ROT_ROW[i])[row][j];
+                    this.faces.get(ROT_ROW[i + 1])[indexes[i + 1]][j] = temp.faces.get(ROT_ROW[i])[indexes[i]][2-j];
                 }
             }
         } else {
             for (int i = MAP_OPERATIONS; i > 0; i--) {
                 for (int j = 0; j < CUBE_DIMENSION; j++) {
-                    this.faces.get(ROT_ROW[i - 1])[row][j] = temp.faces.get(ROT_ROW[i])[row][j];
+                    this.faces.get(ROT_ROW[i - 1])[indexes[i -1]][j] = temp.faces.get(ROT_ROW[i])[indexes[i]][2-j];
                 }
             }
         }
@@ -342,7 +363,6 @@ public class Cube {
         }
         return returnCube;
     }
-
     /**
      * Converts the cube to a string representation.
      *
@@ -358,9 +378,9 @@ public class Cube {
         //Formatting for pointer selection
         returnString += matrixToString(this.faces.get(UP), 7) + "\n";
         for (int i = 0; i < CUBE_DIMENSION; i++) {
-            if (CubeInteraction.pointer[0] == 1 && CubeInteraction.pointer[1] == i) {
+//if (CubeInteraction.pointer[0] == 1 && CubeInteraction.pointer[1] == i) {
                 returnString += "[";
-            }
+          //  }
             //prints the elements manually (Cannot matrix to string because of JTextArea properties, but could call matrixToString upon different GL implementation.
             for (int j = 0; j < CUBE_DIMENSION; j++) {
                 for (int k = 0; k < CUBE_DIMENSION; k++) {
@@ -368,16 +388,17 @@ public class Cube {
                 }
                 returnString += " ";
             }
-            if (CubeInteraction.pointer[0] == 1 && CubeInteraction.pointer[1] == i) {
-                returnString += "]";
-            }
+           // if (CubeInteraction.pointer[0] == 1 && CubeInteraction.pointer[1] == i) {
+             //   returnString += "]";
+            //}
             returnString += "\n";
         }
         returnString += "\n" + matrixToString(this.faces.get(DOWN), 7) + "\n" + matrixToString(this.faces.get(BACK), 7)
-                 + " ".repeat(7 + CubeInteraction.pointer[1] *  3) + "↑" + "\nFRONT = 0, RIGHT = 1, BACK = 2, LEFT = 3, UP = 4, DOWN = 5\n";
+                 + "\nFRONT = 0, RIGHT = 1, BACK = 2, LEFT = 3, UP = 4, DOWN = 5\n";
 
         return returnString;
     }
+    
 
     /**
      * Converts a matrix to a string representation with the specified indentation.

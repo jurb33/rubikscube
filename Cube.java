@@ -1,8 +1,5 @@
 package com.cubeservice.rest;
 
-
-
-
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -46,7 +43,6 @@ public class Cube {
         faces.add(leftFace);
         faces.add(upFace);
         faces.add(downFace);
-
         setCubeSolved();
     }
 
@@ -57,7 +53,6 @@ public class Cube {
      */
     public void U(int index) {
         this.rotateBar(index, true, false);
-        System.out.println(this.backFace[1][0]);
         //CubeInteraction.moveCount++;
     }
 
@@ -98,7 +93,7 @@ public class Cube {
      * @param index The index of the column (0-2) to rotate.
      */
     public void HU(int index) {
-        this.rotateBar((index) % 3, true, true);
+        this.rotateBar((index) % 3, false, true);
         //CubeInteraction.moveCount++;
     }
 
@@ -108,7 +103,7 @@ public class Cube {
      * @param index The index of the column (0-2) to rotate.
      */
     public void HD(int index) {
-        this.rotateBar((index) % 3, false, true);
+        this.rotateBar((index) % 3, true, true);
         //CubeInteraction.moveCount++;
     }
 
@@ -198,7 +193,7 @@ public class Cube {
             if (pointX == 0) {
                 this.planeRotation(FRONT, direction);
             } else if (pointX == 2) {
-                this.planeRotation(BACK, direction);
+                this.planeRotation(BACK, !direction);
             }
         } else {
             if (pointX == 0) {

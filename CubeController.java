@@ -25,6 +25,11 @@ public class CubeController implements WebMvcConfigurer {
     //private HashMap<String, Cube> cubeRepository = new HashMap<>();
     //private HashMap<String, Long> userIDSession = new HashMap<>();
 
+    /*
+     * method setting CORS mapping for different domain environments
+     * * ignore if running locally
+     * @param registry the CorsRegistry object
+     */
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
@@ -33,7 +38,10 @@ public class CubeController implements WebMvcConfigurer {
             .allowCredentials(true)
             .allowedHeaders("*");
     }
-
+    /*
+     * returns instance of userID session's cube
+     * creates a cube if the userID's is null
+     */
     @GetMapping("/cube/fetch-data")
     public ResponseEntity<Cube> fetchData(HttpServletRequest req, HttpServletResponse res) {
         if (userCube == null) {
@@ -42,14 +50,16 @@ public class CubeController implements WebMvcConfigurer {
         }
         return ResponseEntity.ok(userCube);
     }
-
+    /*
+     * updates userID's session cube with the specified command
+     * @param pointer index 0-2 of the cube determined by frontend
+     */
     @PostMapping("/cube/command/")
     public ResponseEntity<Cube> updateCube(@RequestParam String move, @RequestParam int pointer, 
         HttpServletRequest req) {
         if (userCube == null) {
             return ResponseEntity.badRequest().build();
         }
-    
         performCubeOperation(move, pointer);
         return ResponseEntity.ok(userCube);
     }
@@ -60,15 +70,9 @@ public class CubeController implements WebMvcConfigurer {
             case "D": userCube.D(pointer); break;
             case "L": userCube.L(pointer); break;
             case "R": userCube.R(pointer); break;
-            case "HU": userCube.HD(pointer); break; //Swapped because of formatting
-            case "HD": userCube.HU(pointer); break;
+            case "HU": userCube.HU(pointer); break;
+            case "HD": userCube.HD(pointer); break;
             default: break;
         }
-        for (int i = 0; i < userCube.CUBE_DIMENSION; i++) {
-            for (int j = 0; j < userCube.CUBE_DIMENSION; j++) {
-                System.out.println("up face" + userCube.matrixToString(userCube.upFace, 1));
-                System.out.println("front face: " +userCube.matrixToString(userCube.frontFace, 1));
-            }
-    }
 }
 }

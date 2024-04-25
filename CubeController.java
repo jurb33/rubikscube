@@ -15,16 +15,16 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @Configuration
 public class CubeController implements WebMvcConfigurer {
-    private static final int EXPIRATION = 7 * 24 * 60 * 60; // 7 days in seconds
-    private Cube userCube;
-    //private HashMap<String, Cube> cubeRepository = new HashMap<>();
-    //private HashMap<String, Long> userIDSession = new HashMap<>();
-
+    private final long EXPIRATION = 24 * 60 * 60 * 1000 * 7; //7 days in ms
+    private final String KEY = "QWERTY";
+    private HashMap<String, Cube> cubeRepository = new HashMap<>();
+    private HashMap<String, Date> userIdSessions = new HashMap<>();
     /*
      * method setting CORS mapping for different domain environments
      * * ignore if running locally
@@ -43,28 +43,35 @@ public class CubeController implements WebMvcConfigurer {
      * creates a cube if the userID's is null
      */
     @GetMapping("/cube/fetch-data")
-    public ResponseEntity<Cube> fetchData(HttpServletRequest req, HttpServletResponse res) {
-        if (userCube == null) {
-            userCube = new Cube();
-            //userCube.scramble(1);
+    public ResponseEntity<Cube> fetchData(HttpServletRequest req, HttpServletResponse res, @RequestParam String user_id) {
+        if (cubeRepository.get(user_id) == null) {
+            cubeRepository.put(user_id, new Cube());
         }
-        return ResponseEntity.ok(userCube);
+        //update the last fetched data
+        userIdSessions.remove(user_id);
+        userIdSessions.put(user_id, new Date());
+        return ResponseEntity.ok(cubeRepository.get(user_id));
     }
     /*
      * updates userID's session cube with the specified command
      * @param pointer index 0-2 of the cube determined by frontend
      */
     @PostMapping("/cube/command/")
-    public ResponseEntity<Cube> updateCube(@RequestParam String move, @RequestParam int pointer, 
-        HttpServletRequest req) {
-        if (userCube == null) {
+    public ResponseEntity<Cube> updateCube(@RequestParam String user_id, @RequestParam String move,
+     @RequestParam int pointer, HttpServletRequest req) {
+        if (user_id == null) {
             return ResponseEntity.badRequest().build();
         }
-        performCubeOperation(move, pointer);
+        Cube userCube = cubeRepository.get(user_id);
+        performCubeOperation(move, pointer, userCube);
         return ResponseEntity.ok(userCube);
     }
-
-    private void performCubeOperation(String move, int pointer) {
+    /*
+     * performs the command at the index
+     * @param move the move (enumeration)
+     * @param pointer the index (0-2)
+     */
+    private void performCubeOperation(String move, int pointer, Cube userCube) {
         switch (move) {
             case "U": userCube.U(pointer); break;
             case "D": userCube.D(pointer); break;
@@ -72,7 +79,26 @@ public class CubeController implements WebMvcConfigurer {
             case "R": userCube.R(pointer); break;
             case "HU": userCube.HU(pointer); break;
             case "HD": userCube.HD(pointer); break;
+            case "shuffle1": userCube.scramble(1); break;
+            case "shuffle2": userCube.scramble(2); break;
+            case "shuffle3": userCube.scramble(3); break;
+            case "clear": userCube.setCubeSolved(); break;
             default: break;
         }
 }
+    
+    /*
+     * Checks objects of repository and removes expired sessions
+     * from both repositories
+     */
+    @Scheduled(fixedRate = 6048 * 100000)
+    public void cleanRepository() {
+        long current = new Date().getTime();
+        for(Map.Entry<String, Date> id :userIdSessions.entrySet()) {
+            if (current - id.getValue().getTime() >= EXPIRATION ) {
+                userIdSessions.remove(id.getKey());
+                cubeRepository.remove(id.getKey());
+            }
+        }
+    }
 }

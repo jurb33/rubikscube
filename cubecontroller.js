@@ -1,6 +1,8 @@
 
 const express = require('express');
 const axios = require('axios');
+const cookieParser = require('cookie-parser');
+const { v4: uuidv4 } = require('uuid');
 axios.defaults.baseURL = 'http://localhost:8080';
 const path = require('path');
 
@@ -8,14 +10,21 @@ const app = express();
 const port = 3000;
 
 app.use(express.json());
+app.use(cookieParser());
 
 /*
 * defines route for Fetching data from the backend at baseURL and sends the user cube as a JSON
 */
 app.get('/fetch-data', async (req, res) => {
     try {
+        var userId = req.cookies['user_id'];
+        if (!userId) {
+            userId = uuidv4();
+            res.cookie('user_id', userId, { maxAge: 24*60*60*7*1000, httpOnly: true });
+        }
         // Ensuring withCredentials is used properly for backend requests
-        const response = await axios.get('/cube/fetch-data', { withCredentials: true });
+        const response = await axios.get(`/cube/fetch-data?user_id=` + userId);
+    
         res.send(response.data);
     } catch (error) {
         console.error('Error fetching data from Spring Boot:', error);
@@ -27,15 +36,16 @@ app.get('/fetch-data', async (req, res) => {
 * Defines rout for sending commands to userId instance of cube
 */
 app.post('/send-command/:commandType', async (req, res) => {
+    const user_id = req.cookies['user_id'];
     const commandType = req.params.commandType;
     const pointer = parseInt(req.body.index);
     //Check valid input
-    if (!(["U", "D", "L", "R", "HU", "HD"].includes(commandType)) || pointer == null || pointer < 0 || pointer > 2) {
+    if (!(["U", "D", "L", "R", "HU", "HD", "shuffle1", "shuffle2", "shuffle3", "clear"].includes(commandType)) || pointer == null || pointer < 0 || pointer > 2) {
         res.status(400).send("Invalid command or index");
         return;
     }
     try {
-        const result = await sendCommandToSpringBoot(commandType, pointer);
+        const result = await sendCommandToSpringBoot(user_id, commandType, pointer);
         res.json(result);
     } catch (error) {
         console.error('Error sending command to Spring Boot:', error);
@@ -49,11 +59,10 @@ app.post('/send-command/:commandType', async (req, res) => {
 * move='MOVE'&pointer=index
 
 */
-async function sendCommandToSpringBoot(move, pointer) {
+async function sendCommandToSpringBoot(user_id, move, pointer) {
     try {
         const url = `/cube/command/`; 
-        const params = new URLSearchParams({move, pointer}).toString();
-        
+        const params = new URLSearchParams({user_id, move, pointer}).toString();
         const response = await axios.post(url, params, { 
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'

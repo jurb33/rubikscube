@@ -2,27 +2,24 @@ package com.cubeservice.rest;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.stereotype.Component;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import jakarta.servlet.http.Cookie;
+
+import io.micrometer.common.lang.NonNull;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
+
 
 @RestController
 @Configuration
 public class CubeController implements WebMvcConfigurer {
     private final long EXPIRATION = 24 * 60 * 60 * 1000 * 7; //7 days in ms
-    private final String KEY = "QWERTY";
     private HashMap<String, Cube> cubeRepository = new HashMap<>();
     private HashMap<String, Date> userIdSessions = new HashMap<>();
     /*
@@ -31,6 +28,7 @@ public class CubeController implements WebMvcConfigurer {
      * @param registry the CorsRegistry object
      */
     @Override
+    @NonNull
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
             .allowedOrigins("http://localhost:3000")
@@ -53,16 +51,28 @@ public class CubeController implements WebMvcConfigurer {
         return ResponseEntity.ok(cubeRepository.get(user_id));
     }
     /*
+     * returns if this userId's cube's state is solved
+     * @return responseentity<boolean> true solved/ false not
+     */
+    @PostMapping("/cube/isSolved")
+    public ResponseEntity<Boolean> isSolved(HttpServletRequest req, HttpServletResponse res, @RequestParam String user_id) {
+        if (cubeRepository.get(user_id) == null) {
+            return null;
+        }
+        System.out.println(cubeRepository.get(user_id).isSolved());
+        return ResponseEntity.ok(cubeRepository.get(user_id).isSolved());
+    }
+    /*
      * updates userID's session cube with the specified command
      * @param pointer index 0-2 of the cube determined by frontend
      */
     @PostMapping("/cube/command/")
     public ResponseEntity<Cube> updateCube(@RequestParam String user_id, @RequestParam String move,
      @RequestParam int pointer, HttpServletRequest req) {
-        if (user_id == null) {
+        Cube userCube = cubeRepository.get(user_id);
+        if (user_id == null || userCube == null) {
             return ResponseEntity.badRequest().build();
         }
-        Cube userCube = cubeRepository.get(user_id);
         performCubeOperation(move, pointer, userCube);
         return ResponseEntity.ok(userCube);
     }
@@ -71,7 +81,7 @@ public class CubeController implements WebMvcConfigurer {
      * @param move the move (enumeration)
      * @param pointer the index (0-2)
      */
-    private void performCubeOperation(String move, int pointer, Cube userCube) {
+    private Cube performCubeOperation(String move, int pointer, Cube userCube) {
         switch (move) {
             case "U": userCube.U(pointer); break;
             case "D": userCube.D(pointer); break;
@@ -85,6 +95,7 @@ public class CubeController implements WebMvcConfigurer {
             case "clear": userCube.setCubeSolved(); break;
             default: break;
         }
+        return userCube;
 }
     
     /*

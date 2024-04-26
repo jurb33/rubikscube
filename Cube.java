@@ -126,7 +126,7 @@ public class Cube {
         Random random = new Random();
         
         //Log each scramble move
-        while (moveCount < level) {
+        while (moveCount < (level * level * level)) {
             //CubeInteraction.moves.log(this);
             moveCount++;
             

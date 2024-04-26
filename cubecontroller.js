@@ -3,13 +3,14 @@ const express = require('express');
 const axios = require('axios');
 const cookieParser = require('cookie-parser');
 const { v4: uuidv4 } = require('uuid');
-axios.defaults.baseURL = 'http://localhost:8080';
 const path = require('path');
 
+axios.defaults.baseURL =  'http://localhost:3000';
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 8080;
 
 app.use(express.json());
+app.use(express.static(__dirname));
 app.use(cookieParser());
 
 /*
@@ -24,14 +25,12 @@ app.get('/fetch-data', async (req, res) => {
         }
         // Ensuring withCredentials is used properly for backend requests
         const response = await axios.get(`/cube/fetch-data?user_id=` + userId);
-    
         res.send(response.data);
     } catch (error) {
         console.error('Error fetching data from Spring Boot:', error);
         res.status(500).send('Failed to fetch data');
     }
 });
-
 /*
 * Defines rout for sending commands to userId instance of cube
 */
@@ -63,6 +62,7 @@ async function sendCommandToSpringBoot(user_id, move, pointer) {
     try {
         const url = `/cube/command/`; 
         const params = new URLSearchParams({user_id, move, pointer}).toString();
+       
         const response = await axios.post(url, params, { 
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -75,7 +75,6 @@ async function sendCommandToSpringBoot(user_id, move, pointer) {
         throw error;
     }
 }
-
 /*
 * serves the html GUI in the index of the server
 */
@@ -88,7 +87,6 @@ app.get('/', (req, res) => {
         }
     });
 });
-
 /*
 * starts this server
 */

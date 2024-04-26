@@ -25,13 +25,7 @@
             </p>
         </div>
     </div>
-    <script>
-        document.getElementById('clearButton').onclick = function() { fetchCommand('clear'); };
-        document.getElementById('shuffleButton').onclick = function() {
-             fetchCommand('shuffle' + document.getElementById('shuffleSlider').value);};
-        document.getElementById('howToButton').onclick = function() { togglePopup(); };
-    </script>
-    <!-- Three.js scene -->
+    <!-- Three.js scene and event handler script -->
     <script src="scene.js"></script>
     <script src="eventhandler.js"></script>
 </body>

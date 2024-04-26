@@ -51,12 +51,10 @@ app.post('/send-command/:commandType', async (req, res) => {
         res.status(500).send("Failed to send command to Spring Boot");
     }
 });
-
 /*
 * sends command to springboot backend
 * parses search params as such
 * move='MOVE'&pointer=index
-
 */
 async function sendCommandToSpringBoot(user_id, move, pointer) {
     try {
@@ -75,6 +73,16 @@ async function sendCommandToSpringBoot(user_id, move, pointer) {
         throw error;
     }
 }
+app.get('/cube/isSolved', async (req, res) => {
+    try {
+        const user_id = req.cookies['user_id'];
+        const response = await axios.get(`/cube/isSolved?user_id=` + user_id);
+        res.send(response.data);
+    } catch (error) {
+        console.error("Error getting solved state,", + error);
+    }
+});
+
 /*
 * serves the html GUI in the index of the server
 */

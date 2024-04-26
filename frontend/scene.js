@@ -41,6 +41,50 @@ function animate() {
     sceneAnimation();
     renderer.render(scene, camera);
 }
+
+var triggered = false;
+var animating = false;
+async function solvedAnimation() {
+    const solved = await fetch('/cube/isSolved')
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Data response was not ok! Status: ' + response.status);
+        }
+        return response.json();
+    });
+    if (solved) {
+        const whitecube =
+         {upFace: createFace(CUBE_DIMENSION, 2),
+         downFace: createFace(CUBE_DIMENSION, 2),
+        rightFace: createFace(CUBE_DIMENSION, 2),
+        leftFace: createFace(CUBE_DIMENSION, 2),
+        frontFace: createFace(CUBE_DIMENSION, 2),
+        backFace: createFace(CUBE_DIMENSION, 2), };
+        
+        const yellowcube =
+         {upFace: createFace(CUBE_DIMENSION, 5),
+         downFace: createFace(CUBE_DIMENSION, 5),
+        rightFace: createFace(CUBE_DIMENSION, 5),
+        leftFace: createFace(CUBE_DIMENSION, 5),
+        frontFace: createFace(CUBE_DIMENSION, 5),
+        backFace: createFace(CUBE_DIMENSION, 5),};
+        //Makes the cube "flash"
+        if (!triggered) {
+        for (let i = 0; i < 8; i ++) {
+            setTimeout(() => updateCubeGraphics(whitecube), i * 200); // Flash every 200ms
+            setTimeout(() => updateCubeGraphics(yellowcube), i * 200 + 100); // Offset by 100ms
+        }
+        setTimeout(() => {
+            updateCubeGraphics(fetchCube());
+        }, 1600); 
+    }
+    triggered = true;
+    }
+    //Loads an array with a specified value
+    function createFace(dimension, initialValue) {
+        return Array.from({ length: dimension }, () => Array(dimension).fill(initialValue));
+    }
+}
 // Parameters for oscillation
 let t = 0;
 const maxDisplacement = 0.001; // Maximum displacement in units
@@ -252,6 +296,7 @@ function fetchCommand(command) {
                 throw new Error('Data response was not ok!');
             }
             updateCubeGraphics(response.json());
+            solvedAnimation();
         }));       
 }
 /*

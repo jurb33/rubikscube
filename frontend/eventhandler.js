@@ -1,3 +1,6 @@
+/*
+* Formats the difficulty text for the shuffle slider
+*/
 document.getElementById('shuffleSlider').addEventListener('input', function () {
     const difficultyLevel = document.getElementById('difficultyLevel');
     switch (this.value) {
@@ -38,7 +41,7 @@ document.getElementById('shuffleSlider').addEventListener('input', function () {
                     }
                 }
                 break;
-    
+
             case 's':
                 if (pointer.horizontal) {
                     if (pointer.x === 0) {
@@ -84,7 +87,6 @@ document.getElementById('shuffleSlider').addEventListener('input', function () {
             case 'ArrowDown':
                 const tilt = event.key === 'ArrowUp' ? Math.PI / 18 : -Math.PI / 18;
                 camera.position.applyAxisAngle(new THREE.Vector3(1, 0, 0), tilt);
-                
                 break;
         }
         camera.lookAt(scene.position);
@@ -98,3 +100,20 @@ document.getElementById('shuffleSlider').addEventListener('input', function () {
     popup.style.display = 'none';
     }
     }
+    /*
+    * Handles control panel changes
+    */
+    document.getElementById('clearButton').addEventListener('click', function(event) {
+        event.target.blur();
+        triggered = false;
+        fetchCommand('clear')
+    });
+    document.getElementById('shuffleButton').addEventListener('click', function(event) {
+        event.target.blur();
+        triggered = false;
+        fetchCommand('shuffle' +document.getElementById('shuffleSlider').value);
+    });
+    document.getElementById('howToButton').addEventListener('click', function(event) {
+        togglePopup();
+        event.target.blur();
+    });

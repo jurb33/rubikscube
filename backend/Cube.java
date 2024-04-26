@@ -1,4 +1,4 @@
- package com.cubeservice.rest;
+package com.cubeservice.rest;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -17,6 +17,7 @@ public class Cube {
     public int[][] upFace, rightFace, leftFace, frontFace, backFace, downFace;
     public ArrayList<int[][]> faces = new ArrayList<>();
     public final int[] faceList = {FRONT, RIGHT, BACK, LEFT, UP, DOWN};
+
 
     public boolean isHorizontal = false;
     public static final int CUBE_DIMENSION = 3;
@@ -168,10 +169,12 @@ public class Cube {
      * @return True if the cube is solved, False otherwise.
      */
     public boolean isSolved() {
+        int firstNum = this.faces.get(0)[0][0]; //First num of every face, if any element differs, it is NOT solved
         for (int i = 0; i < this.faces.size(); i++) {
             for (int j = 0; j < CUBE_DIMENSION; j++) {
                 for (int k = 0; k < CUBE_DIMENSION; k++) {
-                    if (!(this.faces.get(i)[j][k] == i)) {
+                    if (j == 0) {firstNum = this.faces.get(i)[j][k];}
+                    if (!(this.faces.get(i)[j][k] == firstNum)) {
                         return false;
                     }
                 }
@@ -179,7 +182,6 @@ public class Cube {
         }
         return true;
     }
-
     /**
      * Rotates a third of the cube vertically, facing the front perspective.
      *

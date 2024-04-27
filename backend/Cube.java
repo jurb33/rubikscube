@@ -18,7 +18,7 @@ public class Cube {
     public ArrayList<int[][]> faces = new ArrayList<>();
     public final int[] faceList = {FRONT, RIGHT, BACK, LEFT, UP, DOWN};
 
-
+    private boolean isSolved = false;
     public boolean isHorizontal = false;
     public static final int CUBE_DIMENSION = 3;
     public static final int MAP_OPERATIONS = 4;
@@ -175,11 +175,13 @@ public class Cube {
                 for (int k = 0; k < CUBE_DIMENSION; k++) {
                     if (j == 0) {firstNum = this.faces.get(i)[j][k];}
                     if (!(this.faces.get(i)[j][k] == firstNum)) {
+                        this.isSolved = false;
                         return false;
                     }
                 }
             }
         }
+        this.isSolved = true;
         return true;
     }
     /**

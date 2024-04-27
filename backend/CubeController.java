@@ -54,17 +54,6 @@ public class CubeController implements WebMvcConfigurer {
         return ResponseEntity.ok(cubeRepository.get(user_id));
     }
     /*
-     * returns if this userId's cube's state is solved
-     * @return responseentity<boolean> true solved/ false not
-     */
-    @GetMapping("/cube/isSolved")
-    public ResponseEntity<Boolean> isSolved(HttpServletRequest req, HttpServletResponse res, @RequestParam String user_id) {
-        if (cubeRepository.get(user_id) == null) {
-            return ResponseEntity.ok(false);
-        }
-                return ResponseEntity.ok(cubeRepository.get(user_id).isSolved());
-    }
-    /*
      * updates userID's session cube with the specified command
      * @param pointer index 0-2 of the cube determined by frontend
      */
@@ -77,7 +66,7 @@ public class CubeController implements WebMvcConfigurer {
             return ResponseEntity.badRequest().build();
         }
         performCubeOperation(move, pointer, userCube);
-        
+        userCube.isSolved(); //Updates cube's solved status
         return ResponseEntity.ok(userCube);
     }
     /*

@@ -73,15 +73,6 @@ async function sendCommandToSpringBoot(user_id, move, pointer) {
         throw error;
     }
 }
-app.get('/cube/isSolved', async (req, res) => {
-    try {
-        const user_id = req.cookies['user_id'];
-        const response = await axios.get(`/cube/isSolved?user_id=` + user_id);
-        res.send(response.data);
-    } catch (error) {
-        console.error("Error getting solved state,", + error);
-    }
-});
 
 /*
 * serves the html GUI in the index of the server

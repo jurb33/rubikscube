@@ -44,14 +44,7 @@ function animate() {
 
 var triggered = false;
 var animating = false;
-async function solvedAnimation() {
-    const solved = await fetch('/cube/isSolved')
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Data response was not ok! Status: ' + response.status);
-        }
-        return response.json();
-    });
+async function solvedAnimation(solved) {
     if (solved) {
         const whitecube =
          {upFace: createFace(CUBE_DIMENSION, 2),
@@ -59,7 +52,7 @@ async function solvedAnimation() {
         rightFace: createFace(CUBE_DIMENSION, 2),
         leftFace: createFace(CUBE_DIMENSION, 2),
         frontFace: createFace(CUBE_DIMENSION, 2),
-        backFace: createFace(CUBE_DIMENSION, 2), };
+        backFace: createFace(CUBE_DIMENSION, 2),};
         
         const yellowcube =
          {upFace: createFace(CUBE_DIMENSION, 5),
@@ -76,7 +69,7 @@ async function solvedAnimation() {
         }
         setTimeout(() => {
             updateCubeGraphics(fetchCube());
-        }, 2000); 
+        }, 1600); 
     }
     triggered = true;
     }
@@ -225,10 +218,10 @@ front, back left right, up, down
 */
 async function updateCubeGraphics(data) {
 try {
-     let { frontFace, backFace, leftFace, rightFace, upFace, downFace } = await data;
+     let { frontFace, backFace, leftFace, rightFace, upFace, downFace, solved } = await data;
     if (!frontFace || !backFace || !leftFace || !rightFace || !upFace || !downFace) {
        console.error("One or more face data are undefined:",
-        { frontFace, backFace, leftFace, rightFace, upFace, downFace });
+        { frontFace, backFace, leftFace, rightFace, upFace, downFace});
         return; 
    }
     //Certain transformations were needed to map the face data correctly from the backend
@@ -247,6 +240,7 @@ try {
     updateFace(groups.right, processedRight, 0);
     updateFace(groups.up, processedUp, 2);
     updateFace(groups.down, processedDown, 3);
+    solvedAnimation(solved);
 } catch (Error)  {
    return;
 }
@@ -284,7 +278,7 @@ function updateFace(group, faceData, faceIndex) {
 * /send-command/${command}
 */
 function fetchCommand(command) {
-                    updateCubeGraphics(fetch(`/send-command/${command}`, {
+                   fetch(`/send-command/${command}`, {
                         method: 'POST',
                         headers: {
                      'Content-Type': 'application/json'
@@ -296,8 +290,8 @@ function fetchCommand(command) {
                 throw new Error('Data response was not ok!');
             }
             updateCubeGraphics(response.json());
-            solvedAnimation();
-        }));       
+            //TODO call update graphics with the new solved parameter
+        });       
 }
 /*
 Array manipulation methods used to format .json data for ordered list of cubies

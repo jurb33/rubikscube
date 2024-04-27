@@ -76,7 +76,7 @@ async function solvedAnimation() {
         }
         setTimeout(() => {
             updateCubeGraphics(fetchCube());
-        }, 1600); 
+        }, 2000); 
     }
     triggered = true;
     }
@@ -238,7 +238,7 @@ try {
     let processedLeft = reflectArray(rotateArray(rotateArray(rotateArray(leftFace))));
     let processedRight = rotateArray(rightFace);
     let processedUp = rotateArray(rotateArray(reflectArray((upFace))));
-    let processedDown =((data.downFace));
+    let processedDown =((downFace));
     let processedFront = reflectArray(rotateArray(rotateArray(frontFace)));
     //updates the individual faces at the index of each cubie in the group
     updateFace(groups.front, processedFront, 4);

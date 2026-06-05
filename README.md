@@ -93,7 +93,7 @@ Supported `move` values:
 
 `U`, `D`, `L`, `R`, `HU`, `HD`, `shuffle1`, `shuffle2`, `shuffle3`, `clear`
 
-## How it works (algorithmically)
+## Inner Cube workings
 
 ### Cube representation (backend)
 
